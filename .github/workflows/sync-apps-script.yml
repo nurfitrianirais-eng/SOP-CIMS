@@ -1,0 +1,59 @@
+name: Sync Apps Script to GitHub
+
+on:
+  schedule:
+    # Runs every 4 hours (at 0:00, 4:00, 8:00, 12:00, 16:00, 20:00 UTC)
+    - cron: '7 */4 * * *'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Setup clasp credentials
+        run: |
+          echo "${{ secrets.CLASPRC_JSON }}" | base64 -d > ~/.clasprc.json
+          echo "Credentials saved to ~/.clasprc.json"
+
+      - name: Pull from Apps Script
+        run: |
+          cd ${{ github.workspace }}
+          clasp pull
+        continue-on-error: true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add .
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes from Apps Script"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected from Apps Script"
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add .
+          git commit -m "Auto-sync from Apps Script [skip ci]"
+          git push
