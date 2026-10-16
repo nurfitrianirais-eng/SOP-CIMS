@@ -11,3 +11,6 @@ Desktop.ini
 # Temp files
 *~
 *.tmp
+
+# OAuth tokens — JANGAN pernah di-commit
+.clasprc.json

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px; color: #333; }
+    .card { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
+    .logo-container { text-align: center; margin-bottom: 20px; }
+    .logo-container img { max-width: 220px; height: auto; }
+    .info-box { background-color: #e8f4fd; border: 1px solid #b6d4fe; color: #084298; padding: 12px 15px; border-radius: 6px; font-size: 13px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 13px; }
+    textarea.form-control { height: 70px; resize: vertical; }
+    .btn-submit { background-color: #28a745; color: #ffffff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; }
+    .btn-submit:disabled { background-color: #ccc; cursor: not-allowed; }
+    #status-msg { margin-top: 15px; font-weight: bold; font-size: 13px; text-align: center; }
+    .optional-tag { font-weight: normal; font-size: 11px; color: #777; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- LOGO KENANGAN BRANDS -->
+  <div class="logo-container">
+    <img src="https://lh3.googleusercontent.com/d/1fdq6E6_Z11XVNGzIE0-k9x4XzMQMG9ab" alt="Kenangan Brands Logo">
+  </div>
+
+  <h2 style="text-align: center; color: #8B0000; margin-top: 0;">Pengajuan Project Closing & Benefit</h2>
+
+  <? if (project) { ?>
+    <div class="info-box">
+      <b>📋 Detail Proyek:</b> <?= project.id ?> - <b><?= project.title ?></b><br>
+      Initiator: <?= project.initiator ?> | Status: <b><?= project.status ?></b>
+    </div>
+
+    <form id="closingForm">
+      <input type="hidden" name="projectId" value="<?= project.id ?>">
+
+      <div class="form-group">
+        <label>Tanggal Penyelesaian Aktual (Actual Completion Date) *</label>
+        <input type="date" name="completionDate" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label>Kategori Benefit / Impact <span class="optional-tag">(Opsional)</span></label>
+        <select name="benefitCategory" class="form-control">
+          <option value="Tidak Diklaim">-- Pilih Kategori (Jika Ada) --</option>
+          <option value="Hard Saving (Cost Reduction)">Hard Saving (Cost Reduction / Hemat Biaya Direct)</option>
+          <option value="Soft Saving (Productivity/Efficiency)">Soft Saving (Productivity / Efisiensi Waktu)</option>
+          <option value="Quality & Compliance Improvement">Quality & Compliance Improvement</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nilai Klaim Penghematan Biaya / Benefit <span class="optional-tag">(Opsional)</span></label>
+        <input type="text" name="claimedSaving" class="form-control" placeholder="Contoh: Rp 15.000.000 / Tahun atau 120 Jam / Bulan">
+      </div>
+
+      <div class="form-group">
+        <label>Link Laporan / Bukti Akhir Implementasi (Google Drive / Report) *</label>
+        <input type="text" name="finalEvidence" class="form-control" placeholder="https://drive.google.com/..." required>
+      </div>
+
+      <div class="form-group">
+        <label>Rangkuman Hasil & Dampak Setelah Implementasi (Closing Summary) *</label>
+        <textarea name="closingSummary" class="form-control" placeholder="Jelaskan secara singkat perbedaan kondisi Sebelum vs Sesudah proyek dijalankan..." required></textarea>
+      </div>
+
+      <button type="button" class="btn-submit" id="btnSubmit" onclick="submitClosing()">Kirim Pengajuan Closing</button>
+    </form>
+
+    <div id="status-msg"></div>
+
+  <? } else { ?>
+    <h3 style="text-align:center; color:#8B0000;">Data Project Tidak Ditemukan</h3>
+  <? } ?>
+</div>
+
+<script>
+  function submitClosing() {
+    var form = document.getElementById("closingForm");
+    var btn = document.getElementById("btnSubmit");
+    var msg = document.getElementById("status-msg");
+
+    // VALIDASI JAVASCRIPT: Hanya cek field yang wajib (Tanggal, Bukti, dan Ringkasan)
+    if (!form.completionDate.value || !form.finalEvidence.value || !form.closingSummary.value) {
+      alert("Mohon lengkapi semua kolom yang wajib diisi (beranda bintang *).");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Mengirim Pengajuan...";
+    msg.style.color = "#333";
+    msg.innerText = "Sedang memproses penutupan proyek...";
+
+    var formData = {
+      projectId: form.projectId.value,
+      completionDate: form.completionDate.value,
+      benefitCategory: form.benefitCategory.value,
+      claimedSaving: form.claimedSaving.value || "-", // Fallback ke strip jika opsional kosong
+      finalEvidence: form.finalEvidence.value,
+      closingSummary: form.closingSummary.value
+    };
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          msg.style.color = "green";
+          msg.innerText = "✅ " + response.message;
+          btn.innerText = "Pengajuan Closing Terkirim";
+        } else {
+          msg.style.color = "red";
+          msg.innerText = "❌ " + response.message;
+          btn.disabled = false;
+          btn.innerText = "Kirim Pengajuan Closing";
+        }
+      })
+      .withFailureHandler(function(err) {
+        msg.style.color = "red";
+        msg.innerText = "❌ Error: " + err.message;
+        btn.disabled = false;
+        btn.innerText = "Kirim Pengajuan Closing";
+      })
+      .processClosingFromWeb(formData);
+  }
+</script>
+
+</body>
+</html>

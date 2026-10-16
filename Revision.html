@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px; color: #333; }
+    .card { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
+    .logo-container { text-align: center; margin-bottom: 20px; }
+    .logo-container img { max-width: 220px; height: auto; }
+    .revision-note { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px 15px; border-radius: 6px; font-size: 13px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 13px; }
+    textarea.form-control { height: 70px; resize: vertical; }
+    .btn-submit { background-color: #8B0000; color: #ffffff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; }
+    .btn-submit:disabled { background-color: #ccc; cursor: not-allowed; }
+    #status-msg { margin-top: 15px; font-weight: bold; font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- LOGO KENANGAN BRANDS -->
+  <div class="logo-container">
+    <img src="https://lh3.googleusercontent.com/d/1fdq6E6_Z11XVNGzIE0-k9x4XzMQMG9ab" alt="Kenangan Brands Logo">
+  </div>
+
+  <h2 style="text-align: center; color: #8B0000; margin-top: 0;">Revisi Project CIMS</h2>
+
+  <? if (project) { ?>
+    <!-- CATATAN REVISI DARI APPROVER -->
+    <div class="revision-note">
+      <b>📌 Catatan Revisi dari Approver:</b><br>
+      <?= project.remarks || "Mohon lengkapi dan perbaiki data proyek Anda sesuai arahan." ?>
+    </div>
+
+    <form id="revisionForm">
+      <input type="hidden" name="projectId" value="<?= project.id ?>">
+
+      <div class="form-group">
+        <label>Project ID</label>
+        <input type="text" class="form-control" value="<?= project.id ?>" disabled style="background-color: #eee;">
+      </div>
+
+      <div class="form-group">
+        <label>Project Title / Judul Proyek</label>
+        <input type="text" name="title" class="form-control" value="<?= project.title ?>" required>
+      </div>
+
+      <div class="form-group">
+        <label>Project Scope</label>
+        <select name="scope" class="form-control">
+          <option value="Individual" <?= project.scope === "Individual" ? "selected" : "" ?>>Individual</option>
+          <option value="Team" <?= project.scope === "Team" ? "selected" : "" ?>>Team</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Project Members (Pisahkan dengan koma)</label>
+        <input type="text" name="members" class="form-control" value="<?= project.members ?>">
+      </div>
+
+      <div class="form-group">
+        <label>Problem Statement</label>
+        <textarea name="problem" class="form-control" required><?= project.problem ?></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Supporting Evidence (Link Google Drive / Dokumen)</label>
+        <input type="text" name="evidence" class="form-control" value="<?= project.evidence ?>">
+      </div>
+
+      <div class="form-group">
+        <label>Improvement Idea</label>
+        <textarea name="idea" class="form-control" required><?= project.idea ?></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Impact / Benefit Expected</label>
+        <input type="text" name="impact" class="form-control" value="<?= project.impact ?>" required>
+      </div>
+
+      <div class="form-group">
+        <label>Timeline / Target Selesai</label>
+        <input type="text" name="timeline" class="form-control" value="<?= project.timeline ?>" required>
+      </div>
+
+      <button type="button" class="btn-submit" id="btnSubmit" onclick="submitRevision()">Kirim Hasil Revisi</button>
+    </form>
+
+    <div id="status-msg"></div>
+
+  <? } else { ?>
+    <h3 style="text-align:center; color:#8B0000;">Data Project Tidak Ditemukan</h3>
+  <? } ?>
+</div>
+
+<script>
+  function submitRevision() {
+    var form = document.getElementById("revisionForm");
+    var btn = document.getElementById("btnSubmit");
+    var msg = document.getElementById("status-msg");
+
+    btn.disabled = true;
+    btn.innerText = "Mengirim Revisi...";
+    msg.style.color = "#333";
+    msg.innerText = "Sedang memperbarui data proyek...";
+
+    var formData = {
+      projectId: form.projectId.value,
+      title: form.title.value,
+      scope: form.scope.value,
+      members: form.members.value,
+      problem: form.problem.value,
+      evidence: form.evidence.value,
+      idea: form.idea.value,
+      impact: form.impact.value,
+      timeline: form.timeline.value
+    };
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          msg.style.color = "green";
+          msg.innerText = "✅ " + response.message;
+          btn.innerText = "Revisi Terkirim";
+        } else {
+          msg.style.color = "red";
+          msg.innerText = "❌ " + response.message;
+          btn.disabled = false;
+          btn.innerText = "Kirim Hasil Revisi";
+        }
+      })
+      .withFailureHandler(function(err) {
+        msg.style.color = "red";
+        msg.innerText = "❌ Error: " + err.message;
+        btn.disabled = false;
+        btn.innerText = "Kirim Hasil Revisi";
+      })
+      .processRevisionFromWeb(formData);
+  }
+</script>
+
+</body>
+</html>
