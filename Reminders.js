@@ -72,12 +72,13 @@ function sendMonthlyInitiatorReminders() {
         to: initiatorEmail,
         subject: subject,
         htmlBody: htmlBody,
-        name: "CIMS Kopi Kenangan System"
+        name: CONFIG.SENDER_NAME,
+    from: CONFIG.ADMIN_EMAIL
       };
 
       // Tambahkan CC ke member jika ada
       if (memberEmails) {
-        mailOptions.cc = memberEmails;
+        mailOptions.cc = memberEmails ? memberEmails + "," + (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "") : (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "");
       }
 
       MailApp.sendEmail(mailOptions);
@@ -192,12 +193,13 @@ function sendAutoClosingReminders() {
           to: initiatorEmail,
           subject: subject,
           htmlBody: htmlBody,
-          name: "CIMS Kopi Kenangan System"
+          name: CONFIG.SENDER_NAME,
+    from: CONFIG.ADMIN_EMAIL
         };
 
         // Tambahkan CC ke member jika ada
         if (memberEmails) {
-          mailOptions.cc = memberEmails;
+          mailOptions.cc = memberEmails ? memberEmails + "," + (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "") : (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "");
         }
 
         MailApp.sendEmail(mailOptions);

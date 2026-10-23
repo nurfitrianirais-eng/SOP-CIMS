@@ -75,7 +75,10 @@ function sendApprovalEmail_(projectId, nextOrder) {
 
   GmailApp.sendEmail(approver.email, subject, "Your email client does not support HTML email.", {
     htmlBody: htmlBody,
-    name: CONFIG.SYSTEM_NAME
+    name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
   });
 
   Logger.log("Approval email sent to : " + approver.email);
@@ -136,7 +139,10 @@ function sendResultEmail_(projectId, finalStatus) {
   
   GmailApp.sendEmail(email, "[CIMS] " + finalStatus + " - " + safeId, "HTML Email", {
     htmlBody: html,
-    name: CONFIG.SYSTEM_NAME
+    name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
   });
 
   Logger.log("Result email sent to : " + email);
@@ -147,38 +153,42 @@ function sendResultEmail_(projectId, finalStatus) {
  *************************************************/
 function getInitiatorManagerEmail_(projectIdOrManagerName) {
   try {
+    if (!projectIdOrManagerName) return "";
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var projSheet = ss.getSheetByName("MASTER_PROJECT");
+    var managerSheet = ss.getSheetByName("MASTER_MANAGER");
+    var managerName = String(projectIdOrManagerName).trim();
 
-  if (!projectIdOrManagerName) return "";
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var projSheet = ss.getSheetByName("MASTER_PROJECT");
-  var empSheet = ss.getSheetByName("MASTER_EMPLOYEE");
-  var managerName = String(projectIdOrManagerName).trim();
-
-  if (managerName.toUpperCase().indexOf("CI-") === 0 && projSheet) {
-    var projData = projSheet.getDataRange().getValues();
-    var searchId = managerName.toLowerCase();
-    for (var i = 1; i < projData.length; i++) {
-      if (String(projData[i][0] || "").trim().toLowerCase() === searchId) {
-        managerName = String(projData[i][10] || "").trim(); 
-        break;
+    // If projectId is passed, get manager name from MASTER_PROJECT
+    if (managerName.toUpperCase().indexOf("CI-") === 0 && projSheet) {
+      var projData = projSheet.getDataRange().getValues();
+      var searchId = managerName.toLowerCase();
+      for (var i = 1; i < projData.length; i++) {
+        if (String(projData[i][0] || "").trim().toLowerCase() === searchId) {
+          managerName = String(projData[i][10] || "").trim(); // Column K: Manager
+          break;
+        }
       }
     }
-  }
 
-  if (!managerName || !empSheet) return "";
-  var empData = empSheet.getDataRange().getValues();
-  var searchManager = managerName.toLowerCase();
+    if (!managerName || !managerSheet) return "";
+    var managerData = managerSheet.getDataRange().getValues();
+    var searchManager = managerName.toLowerCase();
 
-  for (var j = 1; j < empData.length; j++) {
-    var empName = String(empData[j][0] || "").trim().toLowerCase(); 
-    var empEmail = String(empData[j][4] || "").trim();
-    if (!empEmail || empEmail.indexOf("@") === -1) continue;             
-    if (empName && (empName === searchManager || searchManager.indexOf(empName) !== -1 || empName.indexOf(searchManager) !== -1)) {
-      if (empEmail && empEmail.indexOf("@") !== -1) return empEmail;
+    // Search in MASTER_MANAGER (Column A: Name, Column B: Email, Column F: Active)
+    for (var j = 1; j < managerData.length; j++) {
+      var mgrName = String(managerData[j][0] || "").trim().toLowerCase(); // Column A
+      var mgrEmail = String(managerData[j][1] || "").trim(); // Column B
+      var mgrActive = String(managerData[j][5] || "").toUpperCase().trim(); // Column F
+      
+      if (mgrActive !== "YES") continue; // Skip inactive managers
+      if (!mgrEmail || mgrEmail.indexOf("@") === -1) continue;
+      
+      if (mgrName && (mgrName === searchManager || searchManager.indexOf(mgrName) !== -1 || mgrName.indexOf(searchManager) !== -1)) {
+        return mgrEmail;
+      }
     }
-  }
-  return "";
-
+    return "";
   } catch (e) {
     Logger.log('getInitiatorManagerEmail_ error: ' + e.toString());
     return "";
@@ -227,11 +237,13 @@ function sendClosingApprovalEmail_(projectId, formData) {
       </div>
     `;
 
-    const systemName = (typeof CONFIG !== "undefined" && CONFIG.SYSTEM_NAME) ? CONFIG.SYSTEM_NAME : "CIMS Kopi Kenangan";
     GmailApp.sendEmail(managerEmail, subject, "Silakan buka email ini menggunakan HTML viewer.", {
       htmlBody: htmlBody,
-      name: systemName + " - QAQC"
-    });
+      name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
+  });
 
     Logger.log("✅ Closing Approval email sent to : " + managerEmail);
   } catch (err) {
@@ -278,11 +290,13 @@ function sendFinalClosingApprovalEmail_(projectId) {
       </div>
     `;
 
-    const systemName = (typeof CONFIG !== "undefined" && CONFIG.SYSTEM_NAME) ? CONFIG.SYSTEM_NAME : "CIMS Kopi Kenangan";
     GmailApp.sendEmail(bayunEmail, subject, "Silakan buka email ini menggunakan HTML viewer.", {
       htmlBody: htmlBody,
-      name: systemName + " - Final Approval"
-    });
+      name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
+  });
 
     Logger.log("✅ Final Approval email sent to Pak Bayun : " + bayunEmail);
   } catch (err) {
@@ -322,7 +336,10 @@ function sendClosingResultEmail_(projectId, isApproved, note) {
   const subject = "[CIMS CLOSING] " + statusStr + " - " + projectId;
   GmailApp.sendEmail(email, subject, "Silakan buka email ini menggunakan HTML viewer.", {
     htmlBody: htmlBody,
-    name: (typeof CONFIG !== "undefined" && CONFIG.SYSTEM_NAME) ? CONFIG.SYSTEM_NAME : "CIMS Kopi Kenangan"
+    name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
   });
 
   Logger.log("Closing Result email sent to : " + email);
@@ -444,12 +461,13 @@ function sendPendingClosingApprovalReminders() {
         </div>
       `;
 
-      var systemName = (typeof CONFIG !== "undefined" && CONFIG.SYSTEM_NAME) ? CONFIG.SYSTEM_NAME : "CIMS Kopi Kenangan";
-
       GmailApp.sendEmail(recipientEmail, subject, "Silakan buka email ini menggunakan HTML viewer.", {
         htmlBody: htmlBody,
-        name: systemName + " - Reminder"
-      });
+        name: CONFIG.SENDER_NAME,
+    from: Session.getActiveUser().getEmail(),
+    replyTo: CONFIG.ADMIN_EMAIL,
+    cc: (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS) ? CONFIG.CC_EMAILS : ""
+  });
 
       Logger.log("✅ Reminder dikirim ke " + recipientEmail + " untuk Project: " + projectId);
       reminderCount++;

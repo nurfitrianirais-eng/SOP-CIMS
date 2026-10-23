@@ -36,7 +36,7 @@ function doGet(e) {
       return htmlOutput;
     } 
 
-    return HtmlService.createHtmlOutput(getDebugInfo_(projectId));
+    return HtmlService.createHtmlOutput("<div style='padding:20px; text-align:center;'><h2 style='color:#DC3545;'>Project Not Found</h2><p>Project ID " + projectId + " tidak ditemukan di sistem.</p></div>");
 
   } catch (error) {
     return HtmlService.createHtmlOutput("<div style='padding:20px; color:red;'>Error: " + error.toString() + "</div>");

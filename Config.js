@@ -12,8 +12,11 @@ const CONFIG = {
   EMPLOYEE_SHEET: "MASTER_EMPLOYEE",
   APPROVAL_LOG_SHEET: "APPROVAL_LOG",
 
-  // Web App
-  WEB_APP_URL: "https://script.google.com/a/macros/kopikenangan.com/s/AKfycbzzVDRlzp97MeKa5RjpUxFKm3P_nGn84_ZJjDaPv36NZtJSyUZyEJsE_VTnlcHk7omi/exec",
+    // Web App
+    WEB_APP_URL: "https://script.google.com/a/macros/kopikenangan.com/s/AKfycbzzVDRlzp97MeKa5RjpUxFKm3P_nGn84_ZJjDaPv36NZtJSyUZyEJsE_VTnlcHk7omi/exec",
+    ADMIN_EMAIL: "nurfitriani.rais@kopikenangan.com",
+  CC_EMAILS: "nurfitriani.rais@kopikenangan.com,hafidh.nurhidayat@kopikenangan.com",
+    SENDER_NAME: "CIMS Kopi Kenangan System",
 
 // Branding
 LOGO_URL: "https://drive.google.com/uc?export=view&id=1fdq6E6_Z11XVNGzIE0-k9x4XzMQMG9ab",

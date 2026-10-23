@@ -615,9 +615,211 @@ function onOpen() {
   ui.createMenu('🔄 CIMS Menu')
     .addItem('⚡ Refresh Dashboard Now', 'setupCIMSExecutiveDashboard')
     .addSeparator()
-    .addItem('📩 Kirim Link Closing (1 Project)', 'sendManualClosingLink')
-    .addItem('🚀 Blast Link Closing (Ke SEMUA Project Approved)', 'blastClosingLinkToApprovedProjects')
+    .addSubMenu(ui.createMenu('📧 Email Reminders')
+      .addItem('Send Closing Reminders (All)', 'menuSendClosingReminders')
+      .addItem('Send Monthly Reminders (All)', 'menuSendMonthlyReminders')
+      .addItem('Send Pending Approval Reminders', 'menuSendPendingApprovalReminders')
+      .addSeparator()
+      .addItem('Re-send Approval Email (by ID)', 'menuResendApprovalEmail')
+      .addItem('Re-send Result Email (by ID)', 'menuResendResultEmail')
+      .addItem('Re-send Closing Approval (by ID)', 'menuResendClosingApproval')
+      .addItem('Re-send Final Approval (by ID)', 'menuResendFinalApproval'))
     .addSeparator()
-    .addItem('📢 Kirim Info Proyek ke Member (1 Project)', 'sendManualInfoToMembers')
+    .addSubMenu(ui.createMenu('📩 Closing Links')
+      .addItem('Kirim Link Closing (1 Project)', 'sendManualClosingLink')
+      .addItem('Blast Link Closing (Ke SEMUA Project Approved)', 'blastClosingLinkToApprovedProjects'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('📢 Member Notifications')
+      .addItem('Kirim Info Proyek ke Member (1 Project)', 'sendManualInfoToMembers'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('🔧 Utilities')
+      .addItem('Generate Next Project ID', 'menuGenerateProjectID')
+      .addItem('List Active Managers', 'menuListManagers'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('ℹ️ Help')
+      .addItem('Documentation', 'menuDocumentation')
+      .addItem('How to Use', 'menuHowToUse'))
     .addToUi();
+}
+
+/*********************************************
+ * MENU HANDLER FUNCTIONS
+ *********************************************/
+
+function menuSendClosingReminders() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('Send Closing Reminders', 'This will send deadline reminder emails to all initiators with projects due within 7 days.\n\nContinue?', ui.ButtonSet.YES_NO);
+  if (response === ui.Button.YES) {
+    try {
+      sendAutoClosingReminders();
+      ui.alert('Success', 'Closing reminders sent successfully!', ui.ButtonSet.OK);
+    } catch (e) {
+      ui.alert('Error', 'Failed to send reminders: ' + e.message, ui.ButtonSet.OK);
+    }
+  }
+}
+
+function menuSendMonthlyReminders() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('Send Monthly Reminders', 'This will send monthly status update emails to all active project initiators.\n\nContinue?', ui.ButtonSet.YES_NO);
+  if (response === ui.Button.YES) {
+    try {
+      sendMonthlyInitiatorReminders();
+      ui.alert('Success', 'Monthly reminders sent successfully!', ui.ButtonSet.OK);
+    } catch (e) {
+      ui.alert('Error', 'Failed to send reminders: ' + e.message, ui.ButtonSet.OK);
+    }
+  }
+}
+
+function menuSendPendingApprovalReminders() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('Send Pending Approval Reminders', 'This will send reminder emails to all approvers with pending closing approvals.\n\nContinue?', ui.ButtonSet.YES_NO);
+  if (response === ui.Button.YES) {
+    try {
+      sendPendingClosingApprovalReminders();
+      ui.alert('Success', 'Pending approval reminders sent successfully!', ui.ButtonSet.OK);
+    } catch (e) {
+      ui.alert('Error', 'Failed to send reminders: ' + e.message, ui.ButtonSet.OK);
+    }
+  }
+}
+
+function menuResendApprovalEmail() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.prompt('Re-send Approval Email', 'Enter Project ID (e.g., CI-2026-0001):', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var projectId = response.getResponseText().trim();
+    if (projectId) {
+      try {
+        sendApprovalEmail_(projectId, 1);
+        ui.alert('Success', 'Approval email re-sent for ' + projectId, ui.ButtonSet.OK);
+      } catch (e) {
+        ui.alert('Error', 'Failed to send email: ' + e.message, ui.ButtonSet.OK);
+      }
+    } else {
+      ui.alert('Error', 'Project ID cannot be empty', ui.ButtonSet.OK);
+    }
+  }
+}
+
+function menuResendResultEmail() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.prompt('Re-send Result Email', 'Enter Project ID:', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var projectId = response.getResponseText().trim();
+    if (projectId) {
+      try {
+        var project = getProjectDetailsByID_(projectId);
+        if (project) {
+          sendResultEmail_(projectId, project.status);
+          ui.alert('Success', 'Result email re-sent for ' + projectId, ui.ButtonSet.OK);
+        } else {
+          ui.alert('Error', 'Project not found: ' + projectId, ui.ButtonSet.OK);
+        }
+      } catch (e) {
+        ui.alert('Error', 'Failed to send email: ' + e.message, ui.ButtonSet.OK);
+      }
+    }
+  }
+}
+
+function menuResendClosingApproval() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.prompt('Re-send Closing Approval', 'Enter Project ID:', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var projectId = response.getResponseText().trim();
+    if (projectId) {
+      try {
+        var project = getProjectDetailsByID_(projectId);
+        if (project) {
+          var formData = {
+            projectId: projectId,
+            finalEvidence: project.remarks || "-",
+            closingSummary: project.remarks || "-",
+            benefitCategory: project.impact || "Uncategorized",
+            claimedSaving: project.impact || "0",
+            completionDate: project.dueDate || new Date().toLocaleDateString()
+          };
+          sendClosingApprovalEmail_(projectId, formData);
+          ui.alert('Success', 'Closing approval email re-sent for ' + projectId, ui.ButtonSet.OK);
+        } else {
+          ui.alert('Error', 'Project not found: ' + projectId, ui.ButtonSet.OK);
+        }
+      } catch (e) {
+        ui.alert('Error', 'Failed to send email: ' + e.message, ui.ButtonSet.OK);
+      }
+    }
+  }
+}
+
+function menuResendFinalApproval() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.prompt('Re-send Final Approval', 'Enter Project ID:', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var projectId = response.getResponseText().trim();
+    if (projectId) {
+      try {
+        sendFinalClosingApprovalEmail_(projectId);
+        ui.alert('Success', 'Final approval email re-sent to Pak Bayun for ' + projectId, ui.ButtonSet.OK);
+      } catch (e) {
+        ui.alert('Error', 'Failed to send email: ' + e.message, ui.ButtonSet.OK);
+      }
+    }
+  }
+}
+
+function menuGenerateProjectID() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var nextId = generateProjectID();
+    ui.alert('Next Project ID', 'The next project ID will be:' + String.fromCharCode(10) + String.fromCharCode(10) + nextId, ui.ButtonSet.OK);
+  } catch (e) {
+    ui.alert('Error', 'Failed to generate project ID: ' + e.message, ui.ButtonSet.OK);
+  }
+}
+
+function menuListManagers() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var managers = getManagers();
+    if (managers.length === 0) {
+      ui.alert('No Active Managers', 'No active managers found in MASTER_MANAGER sheet.', ui.ButtonSet.OK);
+    } else {
+      var list = managers.map(function(m, i) { return (i+1) + '. ' + m.name + ' (' + m.role + ') - ' + m.email; }).join('\n');
+      ui.alert('Active Managers (' + managers.length + ')', list, ui.ButtonSet.OK);
+    }
+  } catch (e) {
+    ui.alert('Error', 'Failed to list managers: ' + e.message, ui.ButtonSet.OK);
+  }
+}
+function menuDocumentation() {
+  var ui = SpreadsheetApp.getUi();
+  var msg = 'CIMS Documentation' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'Documentation:' + String.fromCharCode(10) + String.fromCharCode(10) +
+    '- Project submission via Google Form' + String.fromCharCode(10) +
+    '- Automated approval workflow (L1, L2, Final)' + String.fromCharCode(10) +
+    '- Email notifications for all stakeholders' + String.fromCharCode(10) +
+    '- Real-time dashboard monitoring' + String.fromCharCode(10) +
+    '- Automated reminders for deadlines' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'For detailed documentation, contact QAQC Department.';
+  ui.alert('CIMS Documentation', msg, ui.ButtonSet.OK);
+}
+
+function menuHowToUse() {
+  var ui = SpreadsheetApp.getUi();
+  var msg = 'CIMS Menu Guide:' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'EMAIL REMINDERS:' + String.fromCharCode(10) +
+    '- Send bulk reminder emails' + String.fromCharCode(10) +
+    '- Re-send specific emails by Project ID' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'CLOSING LINKS:' + String.fromCharCode(10) +
+    '- Send closing form link to specific project' + String.fromCharCode(10) +
+    '- Blast closing links to all approved projects' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'MEMBER NOTIFICATIONS:' + String.fromCharCode(10) +
+    '- Send project info to team members' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'UTILITIES:' + String.fromCharCode(10) +
+    '- Generate next Project ID' + String.fromCharCode(10) +
+    '- List all active managers' + String.fromCharCode(10) + String.fromCharCode(10) +
+    'Need help? Contact QAQC Department.';
+  ui.alert('How to Use CIMS Menu', msg, ui.ButtonSet.OK);
 }

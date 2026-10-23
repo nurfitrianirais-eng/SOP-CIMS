@@ -592,9 +592,14 @@ function notifyInitiator_(project) {
 
   // 2. Tambahkan CC jika terdapat email member tim
   if (memberEmails) {
-    mailOptions.cc = memberEmails;
+    mailOptions.cc = memberEmails ? memberEmails + "," + (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS ? CONFIG.ADMIN_EMAIL : "") : (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "");
   }
-
+  
+  // Add sender info
+  mailOptions.name = (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System";
+  mailOptions.from = Session.getActiveUser().getEmail();
+  mailOptions.replyTo = (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com";
+  
   MailApp.sendEmail(mailOptions);
 }
 
@@ -624,9 +629,14 @@ function sendProgressEmail_(email, projectID, projectTitle, statusText, membersS
 
   // Jika ada email member tim, masukkan ke CC
   if (memberEmails) {
-    mailOptions.cc = memberEmails;
+    mailOptions.cc = memberEmails ? memberEmails + "," + (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS ? CONFIG.ADMIN_EMAIL : "") : (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "");
   }
-
+  
+  // Add sender info
+  mailOptions.name = (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System";
+  mailOptions.from = Session.getActiveUser().getEmail();
+  mailOptions.replyTo = (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com";
+  
   MailApp.sendEmail(mailOptions);
 }
 
@@ -683,9 +693,14 @@ function sendApprovalResult_(projectRow, status, comments, escalate) {
 
   // 👥 Tambahkan CC ke seluruh Member Tim jika ada
   if (memberEmails) {
-    mailOptions.cc = memberEmails;
+    mailOptions.cc = memberEmails ? memberEmails + "," + (typeof CONFIG !== "undefined" && CONFIG.CC_EMAILS ? CONFIG.ADMIN_EMAIL : "") : (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL ? CONFIG.ADMIN_EMAIL : "");
   }
-
+  
+  // Add sender info
+  mailOptions.name = (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System";
+  mailOptions.from = Session.getActiveUser().getEmail();
+  mailOptions.replyTo = (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com";
+  
   MailApp.sendEmail(mailOptions);
 }
 
@@ -757,9 +772,12 @@ function sendApprovalReminders() {
         </div>
       `;
 
-      GmailApp.sendEmail(targetEmail, subject, "Buka dengan HTML Viewer", {
+      GmailApp.sendEmail(targetEmail, subject, "HTML Email", {
         htmlBody: htmlBody,
-        name: "CIMS Kopi Kenangan System"
+        name: (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System",
+        from: Session.getActiveUser().getEmail(),
+    replyTo: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com",
+        cc: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : ""
       });
       
       sentCount++;
@@ -893,7 +911,9 @@ function sendDarwinBoxCorrectionEmail_(recipientEmail, inputName, inputTitle, er
   MailApp.sendEmail({
     to: recipientEmail,
     subject: subject,
-    htmlBody: htmlBody
+    htmlBody: htmlBody,
+    name: (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System",
+    from: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com"
   });
 }
 /**
@@ -946,7 +966,9 @@ function blastClosingLinkToApprovedProjects() {
         MailApp.sendEmail({
           to: email,
           subject: subject,
-          htmlBody: bodyHtml
+          htmlBody: bodyHtml,
+          name: (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System",
+          from: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com"
         });
         count++; // Hitung jumlah email sukses
       } catch (e) {
@@ -1022,11 +1044,13 @@ function sendManualClosingLink() {
 
   try {
     MailApp.sendEmail({
-      to: email,
-      subject: subject,
-      htmlBody: bodyHtml
-    });
-    ui.alert("✅ BERHASIL", "Link closing telah sukses dikirim ke: " + email, ui.ButtonSet.OK);
+    to: email,
+    subject: subject,
+    htmlBody: bodyHtml,
+    name: (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System",
+    from: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com"
+  });
+  ui.alert("✅ BERHASIL", "Link closing telah sukses dikirim ke: " + email, ui.ButtonSet.OK);
   } catch (e) {
     ui.alert("❌ GAGAL", "Gagal mengirim email: " + e.message, ui.ButtonSet.OK);
   }
@@ -1126,10 +1150,12 @@ function sendManualInfoToMembers() {
 
   try {
     MailApp.sendEmail({
-      to: memberEmails, 
-      subject: subject,
-      htmlBody: bodyHtml
-    });
+    to: memberEmails, 
+    subject: subject,
+    htmlBody: bodyHtml,
+    name: (typeof CONFIG !== "undefined" && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "CIMS Kopi Kenangan System",
+    from: (typeof CONFIG !== "undefined" && CONFIG.ADMIN_EMAIL) ? CONFIG.ADMIN_EMAIL : "nurfitriani.rais@kopikenangan.com"
+  });
     ui.alert("✅ BERHASIL", "Email informasi proyek berhasil terkirim ke member tim!", ui.ButtonSet.OK);
   } catch (e) {
     ui.alert("❌ GAGAL", "Gagal mengirim email: " + e.message, ui.ButtonSet.OK);
@@ -1254,3 +1280,9 @@ function triggerPendingClosingEmails() {
     }
   }
 }
+
+
+
+
+
+
