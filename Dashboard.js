@@ -773,7 +773,8 @@ function menuGenerateProjectID() {
   var ui = SpreadsheetApp.getUi();
   try {
     var nextId = generateProjectID();
-    ui.alert('Next Project ID', 'The next project ID will be:' + String.fromCharCode(10) + String.fromCharCode(10) + nextId, ui.ButtonSet.OK);
+    var message = 'The next project ID will be: ' + nextId;
+    ui.alert('Next Project ID', message, ui.ButtonSet.OK);
   } catch (e) {
     ui.alert('Error', 'Failed to generate project ID: ' + e.message, ui.ButtonSet.OK);
   }

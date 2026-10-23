@@ -278,14 +278,24 @@ function processClosingFromWeb(formData) {
  */
 function handleClosingApprovalRequest_(projectId, decision, note) {
     try {
+    Logger.log("=== handleClosingApprovalRequest_ called ===");
+    Logger.log("Project ID from URL: " + projectId);
+    Logger.log("Decision: " + decision);
+    Logger.log("Note: " + note);
+
         var ss = SpreadsheetApp.getActiveSpreadsheet();
+        Logger.log("Spreadsheet name: " + ss.getName());
         var projectSheet = ss.getSheetByName("MASTER_PROJECT");
+        Logger.log("MASTER_PROJECT sheet found: " + (projectSheet ? "YES" : "NO"));
         var data = projectSheet.getDataRange().getValues();
+        Logger.log("Total rows in MASTER_PROJECT: " + data.length);
         var rowIndex = -1;
         var searchClean = cleanStr_(projectId);
+        Logger.log("Searching for (cleaned): " + searchClean);
 
         // 1. CARI BARIS DATA
         for (var i = 1; i < data.length; i++) {
+            Logger.log("Row " + i + " project ID: " + data[i][0] + " | Cleaned: " + cleanStr_(data[i][0]));
             if (cleanStr_(data[i][0]) === searchClean) {
                 rowIndex = i + 1;
                 break;
