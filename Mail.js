@@ -146,6 +146,8 @@ function sendResultEmail_(projectId, finalStatus) {
  * HELPER: Dapatkan email Manager dari MASTER_PROJECT / MASTER_EMPLOYEE
  *************************************************/
 function getInitiatorManagerEmail_(projectIdOrManagerName) {
+  try {
+
   if (!projectIdOrManagerName) return "";
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var projSheet = ss.getSheetByName("MASTER_PROJECT");
@@ -169,12 +171,18 @@ function getInitiatorManagerEmail_(projectIdOrManagerName) {
 
   for (var j = 1; j < empData.length; j++) {
     var empName = String(empData[j][0] || "").trim().toLowerCase(); 
-    var empEmail = String(empData[j][2] || "").trim();             
+    var empEmail = String(empData[j][4] || "").trim();
+    if (!empEmail || empEmail.indexOf("@") === -1) continue;             
     if (empName && (empName === searchManager || searchManager.indexOf(empName) !== -1 || empName.indexOf(searchManager) !== -1)) {
       if (empEmail && empEmail.indexOf("@") !== -1) return empEmail;
     }
   }
   return "";
+
+  } catch (e) {
+    Logger.log('getInitiatorManagerEmail_ error: ' + e.toString());
+    return "";
+  }
 }
 
 /*************************************************
@@ -187,7 +195,7 @@ function sendClosingApprovalEmail_(projectId, formData) {
 
     const projectTitle = projectObj.title || "";
     const initiatorName = projectObj.initiator || "";
-    const managerName = projectObj.managerName || projectObj.manager || "";
+    const managerName = projectObj.manager || "";
     const remarksText = (formData && formData.finalEvidence) ? formData.finalEvidence : (projectObj.remarks || "-");
 
     const managerEmail = getInitiatorManagerEmail_(projectId) || (typeof getManagerEmailByName_ === "function" ? getManagerEmailByName_(managerName) : "");
@@ -241,7 +249,7 @@ function sendFinalClosingApprovalEmail_(projectId) {
 
     const projectTitle = projectObj.title || "";
     const initiatorName = projectObj.initiator || "";
-    const managerName = projectObj.managerName || projectObj.manager || "";
+    const managerName = projectObj.manager || "";
     const remarksText = projectObj.remarks || "-";
 
     const bayunEmail = "bayun.binantoro@kopikenangan.com"; 

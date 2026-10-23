@@ -128,7 +128,7 @@ function sendAutoClosingReminders() {
         // 👥 Tarik daftar email member tim untuk di-CC
         var memberEmails = (typeof getMemberEmails_ === "function") ? getMemberEmails_(membersStr) : "";
 
-        var closingLink = webAppUrl + "?action=closing_form&id=" + projectId;
+        var closingLink = webAppUrl + "?action=close&id=" + projectId;
         var subject = "";
         var statusBadge = "";
         var color = "";

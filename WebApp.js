@@ -101,7 +101,7 @@ function getManagerEmailByName_(managerName) {
 
   for (var i = 1; i < data.length; i++) {
     var empName = String(data[i][0] || "").trim().toLowerCase(); // Kolom A: Nama Karyawan
-    var empEmail = String(data[i][2] || "").trim();             // Kolom C: Email
+    var empEmail = String(data[i][4] || "").trim();             // Kolom E: Email
 
     if (empName && (empName === searchName || searchName.indexOf(empName) !== -1 || empName.indexOf(searchName) !== -1)) {
       if (empEmail && empEmail.indexOf("@") !== -1) {

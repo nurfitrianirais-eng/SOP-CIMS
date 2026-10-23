@@ -121,5 +121,4 @@ function getProjectById_(projectId) {
 }
 
 // Alias pendukung
-function getProjectDetailsByID_(projectId) { return getProjectById_(projectId); }
 function getProjectId_(projectId) { return getProjectById_(projectId); }

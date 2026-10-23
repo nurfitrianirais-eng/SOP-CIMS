@@ -1054,7 +1054,7 @@ function getMemberEmails_(membersStr) {
 
     for (let j = 0; j < empData.length; j++) {
       const empName = String(empData[j][0]).trim().toLowerCase();
-      const empEmail = String(empData[j][2]).trim(); 
+      const empEmail = String(empData[j][4]).trim(); 
 
       if (empName && (rawName === empName || rawName.indexOf(empName) !== -1 || empName.indexOf(rawName) !== -1)) {
         if (empEmail && empEmail.includes("@") && !emailList.includes(empEmail)) {
