@@ -476,3 +476,100 @@ function sendPendingClosingApprovalReminders() {
 
   Logger.log("Selesai! Total email reminder terkirim: " + reminderCount);
 }
+/**
+ * Broadcast info maintenance closing ke inisiator proyek aktif & CC Manager terkait
+ */
+function broadcastClosingMaintenanceEmail() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("MASTER_PROJECT");
+  if (!sheet) return;
+
+  var data = sheet.getDataRange().getValues();
+  var targetRecipients = {}; // Format: { "emailInisiator": Set(emailManager1, emailManager2) }
+  var counter = 0;
+
+  var subject = "[PENGUMUMAN CIMS] Fitur Project Closing Sedang Dalam Pemeliharaan (Maintenance)";
+
+  var htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #8B0000; color: white; padding: 20px; text-align: center;">
+        <h2 style="margin: 0;">☕ Pemberitahuan Pemeliharaan Sistem</h2>
+        <div style="font-size: 13px; opacity: 0.9;">Continuous Improvement Management System (CIMS)</div>
+      </div>
+      <div style="padding: 25px; color: #333; line-height: 1.6;">
+        <p>Halo Rekan-rekan Tim QA/QC, Inisiator CI, & Bapak/Ibu Manager,</p>
+        <p>Kami informasikan bahwa saat ini fitur <b>Pengajuan Project Closing</b> dan <b>Approval Closing</b> di sistem CIMS sedang dalam tahap pemeliharaan (<i>under maintenance</i>) untuk optimalisasi dan perbaikan rute alur persetujuan.</p>
+        <div style="background-color: #FFF3CD; border-left: 4px solid #FFEBAA; padding: 12px; margin: 20px 0; font-size: 14px; color: #856404;">
+          ⚠️ <strong>Catatan:</strong> Mohon untuk menunda pengajuan closing proyek dan approval closing sementara waktu sampai proses pemeliharaan selesai.
+        </div>
+        <p>Notifikasi lanjutan akan segera kami sampaikan setelah sistem kembali beroperasi normal. Terima kasih atas perhatian dan kerja samanya.</p>
+      </div>
+      <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #eee;">
+        QAQC Department - PT Bumi Berkah Boga (Kopi Kenangan)
+      </div>
+    </div>
+  `;
+
+  // 1. Kumpulkan seluruh inisiator aktif beserta Managernya
+  for (var i = 1; i < data.length; i++) {
+    var projectId = String(data[i][0] || "").trim();      // Kolom A
+    var initiatorEmail = String(data[i][5] || "").trim(); // Kolom F
+    var managerName = String(data[i][10] || "").trim();   // Kolom K
+    var status = String(data[i][17] || "").trim();        // Kolom R
+
+    // Fallback email inisiator jika kosong di kolom F
+    if (!initiatorEmail || initiatorEmail.indexOf("@") === -1) {
+      if (typeof getInitiatorEmail_ === "function") {
+        initiatorEmail = getInitiatorEmail_(projectId);
+      }
+    }
+
+    // Filter proyek aktif / tahap closing
+    var isTargetStatus = (
+      status === "Approved" || 
+      status === "Waiting Closing Approval" || 
+      status === "Waiting Final Closing Approval"
+    );
+
+    if (isTargetStatus && initiatorEmail && initiatorEmail.indexOf("@") !== -1) {
+      if (!targetRecipients[initiatorEmail]) {
+        targetRecipients[initiatorEmail] = [];
+      }
+
+      // Cari email Manager terkait
+      var managerEmail = "";
+      if (typeof getInitiatorManagerEmail_ === "function") {
+        managerEmail = getInitiatorManagerEmail_(projectId);
+      }
+      if (!managerEmail && typeof getManagerEmailByName_ === "function") {
+        managerEmail = getManagerEmailByName_(managerName);
+      }
+
+      // Masukkan ke daftar CC (hindari duplikasi dan pastikan bukan email inisiator sendiri)
+      if (managerEmail && managerEmail.indexOf("@") !== -1 && managerEmail !== initiatorEmail) {
+        if (targetRecipients[initiatorEmail].indexOf(managerEmail) === -1) {
+          targetRecipients[initiatorEmail].push(managerEmail);
+        }
+      }
+    }
+  }
+
+  // 2. Kirim email blast ke Inisiator dengan CC ke Manager
+  for (var email in targetRecipients) {
+    var ccList = targetRecipients[email].join(",");
+    var mailOptions = {
+      htmlBody: htmlBody,
+      name: "CIMS QAQC - Announcement"
+    };
+
+    if (ccList) {
+      mailOptions.cc = ccList;
+    }
+
+    GmailApp.sendEmail(email, subject, "Fitur closing CIMS sedang dalam pemeliharaan.", mailOptions);
+    counter++;
+    Logger.log("📤 Terkirim ke: " + email + (ccList ? " | CC: " + ccList : ""));
+  }
+
+  Logger.log("✅ Selesai! Pengumuman berhasil dikirim ke " + counter + " inisiator beserta Manager terkait.");
+}
